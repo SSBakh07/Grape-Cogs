@@ -21,8 +21,7 @@ class ReadyCheck(commands.Cog):
             identifier=1039588003770798192,
             force_registration=True,
         )
-        self.config.register_guild(**defaults)
-        self.broadcast_channel = None
+        # self.config.register_guild(**defaults)
 
     @commands.group(aliases=['readycheck'])
     @commands.guild_only()
