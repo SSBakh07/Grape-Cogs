@@ -32,7 +32,7 @@ class ReadyCheck(commands.Cog):
         """
         # TODO: add help
 
-    @rc.Command()
+    @rc.command()
     async def test(self, ctx):
         """
             Publish test message
