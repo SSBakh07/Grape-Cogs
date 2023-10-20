@@ -9,6 +9,14 @@ from redbot.core.utils.predicates import MessagePredicate
 from redbot.core.utils.embed import randomize_colour
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
+class Buttons(discord.ui.View):
+    def __init__(self, *, timeout=180):
+        super().__init__(timeout=timeout)
+    @discord.ui.button(label="Button",style=discord.ButtonStyle.gray)
+    async def gray_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        await interaction.response.edit_message(content=f"This is an edited button response!")
+
+
 class ReadyCheck(commands.Cog):
     """
     Ready Check
@@ -36,4 +44,4 @@ class ReadyCheck(commands.Cog):
         """
             Publish test message
         """
-        await ctx.send("Test message!")
+        await ctx.send("Test message!", view=Buttons())
