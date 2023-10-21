@@ -27,7 +27,7 @@ class CheckView(discord.ui.View):
             pass
 
 
-    @discord.ui.button(label=_("Ready"), style=discord.ButtonStyle.green)
+    @discord.ui.button(label="Ready", style=discord.ButtonStyle.green)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.interacted_users.append(interaction.user.id)
         self.stop()
