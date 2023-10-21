@@ -1,4 +1,5 @@
 import discord
+from typing import Optional
 
 class CheckView(discord.ui.View):
     def __init__(
@@ -18,7 +19,7 @@ class CheckView(discord.ui.View):
         if self.message is None:
             # we can't do anything here if message is none
             return
-            
+
         try:
             await self.message.edit(view=view)
         except discord.HTTPException:

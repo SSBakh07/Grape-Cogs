@@ -10,7 +10,7 @@ from redbot.core.utils.embed import randomize_colour
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 from redbot.core.utils.views import ConfirmView
 import asyncio
-from CheckView import CheckView
+from .CheckView import CheckView
 # https://stackoverflow.com/questions/62507316/executing-a-function-after-a-certain-period-of-time (asyncio)
 
 class Buttons(discord.ui.View):
