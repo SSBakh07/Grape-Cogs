@@ -23,14 +23,13 @@ defaults = {
     "users": {},
     "settings": {
         "join_wait_time": 180,
-        "default_sprint_time": 1,
+        "default_sprint_time": 15,
         "cutoff_wpm": 10 
     }
 }
 
 
 # TODO: make adjustable
-TIME_TO_JOIN = 20 
 DEFAULT_SPRINT_TIME = 1    # In minutes
 
 # TODO: add function for removing user data
@@ -99,7 +98,7 @@ class Sprint(commands.Cog):
 
         # Sprint time checking
         if not sprint_time:
-            sprint_time = DEFAULT_SPRINT_TIME
+            sprint_time = self._default_sprint_time
         else:
             try:
                 sprint_time = int(sprint_time)
@@ -111,12 +110,12 @@ class Sprint(commands.Cog):
         self.ongoing = True
         self.current_sprint = {}
 
-        time_to_wait = int(time.time() + TIME_TO_JOIN + 1)    # Extra second is time for the bot to send/delete message
+        time_to_wait = int(time.time() + self._time_to_join + 1)    # Extra second is time for the bot to send/delete message
 
         msg_content = "Sprint starting <t:{}:R>. Enter ".format(time_to_wait) + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint!"
         msg_embed = discord.Embed(title="🌟🌟🌟 SPRINT STARTING 🌟🌟🌟", description=msg_content)
         self.sprint_msg = await ctx.send(embed=msg_embed)
-        await asyncio.sleep(TIME_TO_JOIN)
+        await asyncio.sleep(self._time_to_join)
 
 
         if self.sprint_cancelled:
@@ -126,7 +125,7 @@ class Sprint(commands.Cog):
         # Start sprint & notify
         await self.sprint_msg.delete()
 
-        time_to_sprint = DEFAULT_SPRINT_TIME * 60
+        time_to_sprint = sprint_time * 60
         sprint_timestamp = int(time.time() + time_to_sprint + 1)
 
         msg_content = "Sprint ends <t:{}:R> left! Go!!!! \n".format(sprint_timestamp)
@@ -342,7 +341,7 @@ class Sprint(commands.Cog):
         async with self.config.guild(ctx.guild).users() as users:
             filepath = "user_data_{}.json".format(time.time())
             with open(filepath, 'w') as outfile:
-                json.dump(users, outfile, indent=4)
+                json.dumps(users, outfile, indent=4)
 
                 # Send file
                 await ctx.send(file=discord.File(filepath, filepath))
