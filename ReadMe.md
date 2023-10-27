@@ -15,5 +15,5 @@ Install a specific cog using the following command:
 [TBA: List of cogs]
 
 Currently existing cogs:
-- Bulletin cog
+- sprint: a sprinting cog
 - Readycheck cog
