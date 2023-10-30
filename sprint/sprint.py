@@ -6,7 +6,7 @@ from redbot.core import commands, checks
 from redbot.core.bot import Red
 from redbot.core.config import Config
 from redbot.core.utils.predicates import MessagePredicate
-from redbot.core.utils.chat_formatting import inline, humanize_list, bold
+from redbot.core.utils.chat_formatting import inline, humanize_list, bold, italics
 from redbot.core.utils.embed import randomize_colour
 import asyncio
 import time
@@ -18,7 +18,6 @@ TOTAL_WC = "total_wc"
 SPRINTS = "sprints"
 AVG_WPM = "avg_wpm"
 
-# users -> {uid: total wordcount}
 defaults = {
     "users": {},
     "settings": {
@@ -28,11 +27,6 @@ defaults = {
     }
 }
 
-
-# TODO: make adjustable
-DEFAULT_SPRINT_TIME = 1    # In minutes
-
-# TODO: add function for removing user data
 
 class Sprint(commands.Cog):
     """
@@ -55,6 +49,7 @@ class Sprint(commands.Cog):
         self.sprint_msg = None
         self.current_sprint = {}
         self.sprint_cancelled = False
+        self.waiting_for = []
 
         # Set up settings
         self._time_to_join = None
@@ -89,7 +84,7 @@ class Sprint(commands.Cog):
         prefix = await self._get_prefix(ctx)
 
         if self.ongoing:
-            await ctx.send("There's already an ongoing sprint! Enter " + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint!", reference=self.sprint_msg)
+            await ctx.send("There's already an ongoing sprint! Enter " + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint! (Omit " + inline("<word-count>") + " to start from 0 words)", reference=self.sprint_msg)
             return
 
         # TODO: turn into decorator
@@ -112,8 +107,8 @@ class Sprint(commands.Cog):
 
         time_to_wait = int(time.time() + self._time_to_join + 1)    # Extra second is time for the bot to send/delete message
 
-        msg_content = "Sprint starting <t:{}:R>. Enter ".format(time_to_wait) + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint!"
-        msg_embed = discord.Embed(title="🌟🌟🌟 SPRINT STARTING 🌟🌟🌟", description=msg_content)
+        msg_content = "Sprint starting <t:{}:R> for {} minutes. Enter ".format(time_to_wait, sprint_time) + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint! (Omit " + inline("<word-count>") + " to start with 0 words)"
+        msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 SPRINT STARTING 🌟🌟🌟", description=msg_content))
         self.sprint_msg = await ctx.send(embed=msg_embed)
         await asyncio.sleep(self._time_to_join)
 
@@ -141,20 +136,25 @@ class Sprint(commands.Cog):
 
         # Finish sprint & notify
         await self.sprint_msg.delete()
+        self.waiting_for = [uid for uid in self.current_sprint.keys()]
 
-        msg_content = "You have 3 minutes to enter your word count!"
+        msg_content = "You have 3 minutes to enter your word count! Enter " + inline("{}sprint words <word-count>".format(prefix)) + " to enter your final word count!"
         msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 SPRINT ENDED 🌟🌟🌟", description=msg_content))
         await ctx.send(embed=msg_embed)
 
         await ctx.send(humanize_list(["<@{}>".format(uid) for uid in self.current_sprint]))
-        await asyncio.sleep(3*60)
+        # await asyncio.sleep(3*60)
+        turnin_timeout = time.time() + 3*60
+        while len(self.waiting_for) > 0 and time.time() < turnin_timeout:
+            await asyncio.sleep(1)
 
-        final_wc = [[user, self.current_sprint[user][1]] for user in self.current_sprint.keys()]
+        final_wc = [[user, self.current_sprint[user][1] - self.current_sprint[user][0]] for user in self.current_sprint.keys()]
         final_wc.sort(key=lambda x: x[1])
 
         msg_content = ""
         for i, record in enumerate(final_wc):
             msg_content = "{}. <@{}> — {} words ({} wpm) \n".format(i+1, record[0], record[1], record[1]//sprint_time)
+        msg_content += "\n\n" + italics("(Note that wpms under {} aren't counted towards average WPM)".format(self._cutoff_wpm))
         msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 LEADERBOARD 🌟🌟🌟", description=msg_content))
         await ctx.send(embed=msg_embed)
 
@@ -189,7 +189,7 @@ class Sprint(commands.Cog):
                     }
 
 
-        warning_embed = discord.Embed(title="NOTICE", description="This writing bot is still under construction! If you have any tips or suggestions, feel free to let me know [link](https://google.com)!", color=discord.Colour.gold())
+        warning_embed = discord.Embed(title="NOTICE", description="This writing bot is still under construction! If you have any tips or suggestions, feel free to let me know [here](https://forms.gle/Whh2d5zDNkWtDQ876)!", color=discord.Colour.gold())
         await ctx.send(embed=warning_embed)
 
 
@@ -243,6 +243,7 @@ class Sprint(commands.Cog):
         await ctx.send("Word count updated: {} words ({} new)".format(word_count, word_count - prev_wc), reference=ctx.message)
 
         self.current_sprint[uid][1] = word_count
+        self.waiting_for.remove(str(ctx.author.id))
 
 
     @sprint.command()
@@ -250,11 +251,16 @@ class Sprint(commands.Cog):
         """
             Stop the sprint.
         """
+        if not self.ongoing:
+            await ctx.send("There isn't a sprint running right now!")
+            return
+
         # Make it so people vote and if majority rules then yeah sprint cancelled
         self.ongoing = False
         self.sprint_cancelled = True
         await self.sprint_msg.delete()
-        await ctx.send("Sprint has been cancelled!")
+        cancel_embed = discord.Embed(title="SPRINT CANCELLED", description="The sprint has been called off!", color=discord.Colour.red())
+        await ctx.send(embed=cancel_embed)
 
 
     #### Settings-specifc commands
@@ -321,7 +327,7 @@ class Sprint(commands.Cog):
         """
             Delete info for users with a specific UID.
         """
-        self._delete_info_for_user(ctx, uid)
+        await self._delete_info_for_user(ctx, uid)
 
 
     async def _delete_info_for_user(self, ctx, uid):
@@ -351,6 +357,8 @@ class Sprint(commands.Cog):
         """
             Show more detailed help
         """
+        if self._time_to_join is None:
+            await self._setup_settings(ctx)
         prefix = await self._get_prefix(ctx)
 
         msg = "- To start a sprint, enter " + inline("{}sprint start".format(prefix)) + f" to run a sprint for {self._default_sprint_time} minutes. For a sprint with another length, enter " + inline("{}sprint start <minutes>".format(prefix)) + "\nFor example, for a sprint that's 25 minutes long, enter: " + inline("{}sprint start 25".format(prefix)) + "\n"
@@ -358,6 +366,6 @@ class Sprint(commands.Cog):
         msg += "- At any point during the sprint, you can update your word count with " + inline("{}sprint words <word count>".format(prefix)) + "\n"
         msg += "- To call off a sprint, enter " + inline("{}sprint cancel".format(prefix))
         msg += "\n\n"
-        msg += "This cog is still under construction! If you've got any tips or suggestions or bug reports, feel free to let me know in the anonymous tip box [here](https://google.com)!"
+        msg += "This cog is still under construction! If you've got any tips or suggestions or bug reports, feel free to let me know in the anonymous tip box [here](https://forms.gle/Whh2d5zDNkWtDQ876)!"
         help_embed = discord.Embed(title="Help", description=msg, color=discord.Colour.gold())
         await ctx.send(embed=help_embed)
