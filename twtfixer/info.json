@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/Cog-Creators/Red-DiscordBot/V3/develop/schema/red_cog.schema.json",
-    "name": "Sprint",
-    "short": "Writing sprint cog for Discord Redbot",
+    "name": "TwtFixer",
+    "short": "Twitter fixer",
     "description": "A long description of the cog.",
     "end_user_data_statement": "This cog does not persistently store any data or metadata about users.",
     "author": [

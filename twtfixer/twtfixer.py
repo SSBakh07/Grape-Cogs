@@ -50,6 +50,7 @@ class TwtFixer(commands.Cog):
         self.toggle = not self.toggle
         await ctx.send("TwtFixer set to: " + inline(str(self.toggle)))
     
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if not self.toggle:
