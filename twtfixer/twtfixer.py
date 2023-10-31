@@ -8,7 +8,9 @@ from redbot.core.config import Config
 from redbot.core.utils.chat_formatting import inline
 import re
 
-
+defaults = {
+    "toggle": False
+}
 
 class TwtFixer(commands.Cog):
     """
@@ -24,9 +26,7 @@ class TwtFixer(commands.Cog):
             identifier=1039588003770798192,
             force_registration=True,
         )
-        # self.config.register_guild(**defaults)
-
-        self.toggle = False
+        self.config.register_guild(**defaults)
 
 
     def find_occurrence(self, msg):
@@ -47,20 +47,22 @@ class TwtFixer(commands.Cog):
 
     @twtfixer.command()
     async def toggle(self, ctx):
-        self.toggle = not self.toggle
-        await ctx.send("TwtFixer set to: " + inline(str(self.toggle)))
+        async with self.config.guild(ctx.guild).toggle() as toggle:
+            toggle = not toggle
+            await ctx.send("TwtFixer set to: " + inline(str(toggle)))
     
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not self.toggle or message.author == self.bot.user.id:
-            return
-        
-        msg_content = message.content
-        matches = self.find_occurrence(msg_content)
-        if len(matches) > 0:
-            for match in matches:
-                _match = list(match)
-                _match[1] = "vxtwitter"
-                await message.channel.send(''.join(_match))
-            return
+        async with self.config.guild(ctx.guild).toggle() as toggle:
+            if not toggle or message.author == self.bot.user.id:
+                return
+            
+            msg_content = message.content
+            matches = self.find_occurrence(msg_content)
+            if len(matches) > 0:
+                for match in matches:
+                    _match = list(match)
+                    _match[1] = "vxtwitter"
+                    await message.channel.send(''.join(_match))
+                return
