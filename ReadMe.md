@@ -17,3 +17,4 @@ Install a specific cog using the following command:
 Currently existing cogs:
 - sprint: a sprinting cog
 - Readycheck cog
+- twt fixer: replace twitter links with fx/vxtwitter links

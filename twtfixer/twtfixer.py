@@ -52,6 +52,9 @@ class TwtFixer(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if not self.toggle:
+            return
+        
         msg_content = message.content
         matches = self.find_occurrence(msg_content)
         if len(matches) > 0:
