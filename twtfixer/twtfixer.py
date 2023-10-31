@@ -30,7 +30,7 @@ class TwtFixer(commands.Cog):
 
 
     def find_occurrence(self, msg):
-        reg_str = "(https:\/\/)?(twitter|x)(\.com\/)?([a-zA-Z0-9_\/\?\=\&]+)"
+        reg_str = "(https:\/\/)(twitter|x)(\.com\/)([a-zA-Z0-9_\/\?\=\&]+)"
         return re.findall(reg_str, msg)
 
     ##############################################
@@ -53,15 +53,14 @@ class TwtFixer(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not self.toggle:
+        if not self.toggle or message.author == self.bot.user.id:
             return
         
         msg_content = message.content
         matches = self.find_occurrence(msg_content)
         if len(matches) > 0:
-            await message.channel.send(str(matches))
+            for match in matches:
+                _match = list(match)
+                _match[1] = "vxtwitter"
+                await message.channel.send(''.join(_match))
             return
-
-
-    
-    
