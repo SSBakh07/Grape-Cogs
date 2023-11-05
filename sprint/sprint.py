@@ -17,15 +17,27 @@ import json
 TOTAL_WC = "total_wc"
 SPRINTS = "sprints"
 AVG_WPM = "avg_wpm"
+LAST_WC = "last_wc"
+
+SETTINGS = "settings"
+USERS = "users"
 
 defaults = {
-    "users": {},
-    "settings": {
+    # "users": {},
+    # "settings": {
+    #     "join_wait_time": 180,
+    #     "default_sprint_time": 15,
+    #     "cutoff_wpm": 10 
+    # }
+    "guild": {}
+}
+
+# Default settings to set for new guild
+default_settings = {
         "join_wait_time": 180,
         "default_sprint_time": 15,
         "cutoff_wpm": 10 
     }
-}
 
 
 class Sprint(commands.Cog):
@@ -120,6 +132,12 @@ class Sprint(commands.Cog):
         # Start sprint & notify
         await self.sprint_msg.delete()
 
+        
+        if len(self.current_sprint) == 0:
+            await ctx.send("No one joined the sprint! Stopping :(")
+            self.ongoing = False
+            return
+
         time_to_sprint = sprint_time * 60
         sprint_timestamp = int(time.time() + time_to_sprint + 1)
 
@@ -172,20 +190,22 @@ class Sprint(commands.Cog):
 
                 try: 
                     user_info = users[uid]
-                    user_info[TOTAL_WC] += record[1]
+                    user_info[TOTAL_WC] += record[1] - record[0]
 
                     n_records = len(user_info[SPRINTS])
                     if wpm != "?":
                         user_info[AVG_WPM] = wpm * (1/(n_records + 1)) + user_info[AVG_WPM] * (n_records/(n_records + 1))
 
                     user_info[SPRINTS].append([today, record[1]])
+                    user_info[LAST_WC] = record[1]
                 
                 # If user doesn't exist, create record for them
                 except KeyError:
                     users[uid] = {
                         TOTAL_WC: record[1],
                         AVG_WPM: wpm,
-                        SPRINTS: [[today, record[1]]]
+                        SPRINTS: [[today, record[1]]],
+                        LAST_WC: record[1]
                     }
 
 
@@ -198,7 +218,7 @@ class Sprint(commands.Cog):
         
         
     @sprint.command()
-    async def join(self, ctx, word_count = 0):
+    async def join(self, ctx, word_count = "0"):
         """
             Join the sprint! Wordcount optional.
         """
@@ -208,7 +228,15 @@ class Sprint(commands.Cog):
             return
 
         try:
-            word_count = int(word_count)
+            if "same" in word_count.lower():
+                users = await self.config.guild(ctx.guild).users()
+                try:
+                    word_count = users[str(ctx.author.id)][LAST_WC]
+                except KeyError:
+                    await ctx.send("No user data yet!")
+                    return
+            else:
+                word_count = int(word_count)
         except ValueError:
             await ctx.send("Invalid word count! Please enter a number.")
             return
@@ -308,6 +336,7 @@ class Sprint(commands.Cog):
         """
             Delete all of your sprint info completely from the bot.
         """
+        await ctx.send("This is a bit buggy - @ one of the admins to do his for you until I fix this.")
         wait_time = 5*60
         timelimit = time.time() + wait_time
         await ctx.send("Are you sure you want to delete your data? This action cannot be reversed!")
@@ -362,10 +391,21 @@ class Sprint(commands.Cog):
         prefix = await self._get_prefix(ctx)
 
         msg = "- To start a sprint, enter " + inline("{}sprint start".format(prefix)) + f" to run a sprint for {self._default_sprint_time} minutes. For a sprint with another length, enter " + inline("{}sprint start <minutes>".format(prefix)) + "\nFor example, for a sprint that's 25 minutes long, enter: " + inline("{}sprint start 25".format(prefix)) + "\n"
-        msg += "- After that, join the sprint using " + inline("{}sprint join".format(prefix)) + "\nIf you'd like to join with a specific word count, enter " + inline("{}sprint join <word count>".format(prefix)) + "\nFor example, for joining with 153 words, enter: " + inline("{}sprint join 153".format(prefix))  + "\n"
+        msg += "- After that, join the sprint using " + inline("{}sprint join".format(prefix)) + "\nIf you'd like to join with a specific word count, enter " + inline("{}sprint join <word count>".format(prefix)) + "\nFor example, for joining with 153 words, enter: " + inline("{}sprint join 153".format(prefix))  + "\nYou can also join with the word count at the end of your last sprint using: " + inline("{}sprint join same".format(prefix)) + "\n"
         msg += "- At any point during the sprint, you can update your word count with " + inline("{}sprint words <word count>".format(prefix)) + "\n"
         msg += "- To call off a sprint, enter " + inline("{}sprint cancel".format(prefix))
         msg += "\n\n"
         msg += "This cog is still under construction! If you've got any tips or suggestions or bug reports, feel free to let me know in the anonymous tip box [here](https://forms.gle/Whh2d5zDNkWtDQ876)!"
         help_embed = discord.Embed(title="Help", description=msg, color=discord.Colour.gold())
         await ctx.send(embed=help_embed)
+
+
+    @sprint.command()
+    @checks.admin_or_permissions(ban_members=True)
+    async def wipeAllData(self, ctx):
+        """
+            Wipes all data for all users in a guild
+        """
+        async with self.config.guild(ctx.guild).users() as users:
+            users = {}
+            await ctx.send("All data for all users of this server has been deleted.")
