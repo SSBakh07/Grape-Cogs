@@ -54,19 +54,19 @@ class ReadyCheck(commands.Cog):
         """
         # TODO: add help
 
-    @rc.command()
-    async def test(self, ctx):
-        """
-            Publish test message
-        """
-        # msg = await ctx.send("Test message!", view=Buttons())
-        view = CheckView()
+    # @rc.command()
+    # async def test(self, ctx):
+    #     """
+    #         Publish test message
+    #     """
+    #     # msg = await ctx.send("Test message!", view=Buttons())
+    #     view = CheckView()
 
-        view.message = await ctx.send("Are you sure you about that?", view=view)
-        await view.wait()
+    #     view.message = await ctx.send("Are you sure you about that?", view=view)
+    #     await view.wait()
 
-        final_msg = " ".join([str(id) for id in view.interacted_users])
-        await ctx.send(final_msg)
+    #     final_msg = " ".join([str(id) for id in view.interacted_users])
+    #     await ctx.send(final_msg)
 
 
     def parse_time(self, timestring):

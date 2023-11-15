@@ -1,3 +1,5 @@
+# TODO: Add check for each command like getStats to see if guild has been setup yet
+
 import discord
 from redbot.core import commands, checks
 from redbot.core.bot import Red
@@ -43,8 +45,7 @@ defaults = {
 
 # Default settings to set for new guild
 default_settings = {
-    # JOIN_WAIT_KEY: 180,
-    JOIN_WAIT_KEY: 30,
+    JOIN_WAIT_KEY: 180,
     SPRINT_TIME_KEY: 15,
     CUTOFF_WPM_KEY: 10 
 }
@@ -79,7 +80,6 @@ class Sprint(commands.Cog):
     
     async def _setup_default_guild(self, guild, ctx=None):
         guild_id = str(guild.id)
-
 
 
         async with self.config.guild(guild).guilds() as guilds:
@@ -164,8 +164,7 @@ class Sprint(commands.Cog):
         sprint_id = str(int(time.time()))
         self.sprint_dict[guild_id][SPRINT_ID_KEY] = sprint_id
 
-        # time_to_wait = int(time.time() + guild[SETTINGS_VARS][JOIN_WAIT_KEY] + 1)    # Extra second is time for the bot to send/delete message        
-        time_to_wait = int(time.time() + 30 + 1)
+        time_to_wait = int(time.time() + guild[SETTINGS_VARS][JOIN_WAIT_KEY] + 1)    # Extra second is time for the bot to send/delete message        
 
         msg_content = "Sprint starting <t:{}:R> for {} minutes. Enter ".format(time_to_wait, sprint_time) + inline("{}sprint join <word-count>".format(prefix)) + " to join the sprint! (Omit " + inline("<word-count>") + " to start with 0 words)"
         msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 SPRINT STARTING 🌟🌟🌟", description=msg_content))
@@ -235,16 +234,11 @@ class Sprint(commands.Cog):
         msg_content = ""
         for i, result in enumerate(final_wc):
             user, wc_diff, wpm = result
-            msg_content = "{}. <@{}> — {} words ({} wpm) \n".format(i+1, user, wc_diff, wpm)
+            msg_content = "{}. <@{}> — {} words ({} wpm) \n".format(i+1, user, wc_diff, round(wpm))
             
         msg_content += "\n\n" + italics("(Note that wpms under {} aren't counted towards average WPM)".format(guild[SETTINGS_VARS][CUTOFF_WPM_KEY]))
         msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 LEADERBOARD 🌟🌟🌟", description=msg_content))
         await ctx.send(embed=msg_embed)
-
-
-        # theres a bug: https://discord.com/channels/1065798475524079826/1145395914207408138/1172898163900829696
-
-
 
         today = datetime.today().strftime('%Y-%m-%d')
 
@@ -405,7 +399,7 @@ class Sprint(commands.Cog):
             guild_settings = guild[SETTINGS_VARS]
         
             msg = bold("Time to Join") + ": " + inline(str(guild_settings[JOIN_WAIT_KEY])) + "\n" + "Time to join a sprint (in seconds)" + "\n\n"
-            msg += bold("Default Sprint Time") + ": " + inline(guild_settings[SPRINT_TIME_KEY]) + "\n" + "Default sprint time if not specified (in minutes)" + "\n\n"
+            msg += bold("Default Sprint Time") + ": " + inline(str(guild_settings[SPRINT_TIME_KEY])) + "\n" + "Default sprint time if not specified (in minutes)" + "\n\n"
             msg += bold("Cutoff WPM") + ": " + inline(str(guild_settings[CUTOFF_WPM_KEY])) + "\n" + "Cutoff wpm to not add to users' average WPM" + "\n\n"
 
             settings_embed = discord.Embed(title="Settings", description=msg, color=discord.Colour.blue())
@@ -458,18 +452,21 @@ class Sprint(commands.Cog):
         """
             Delete all of your sprint info completely from the bot.
         """
-        await ctx.send("This is a bit buggy - @ one of the admins to do this for you until I fix this.")
-        wait_time = 5*60
-        timelimit = time.time() + wait_time
-        await ctx.send("Are you sure you want to delete your data? This action cannot be reversed!")
-        while time.time() < timelimit:
-            msg = await self.bot.wait_for("message", check=MessagePredicate.same_context(ctx))
-            msg_content = msg.content.strip().lower()
-            if msg_content.strip().lower()[0] == 'y':
-                uid = str(ctx.author.id)
-                self._delete_info_for_user(ctx, uid)
-            else:
-                return
+        # await ctx.send("This is a bit buggy - @ one of the admins to do this for you until I fix this.")
+        uid = str(ctx.author.id)
+        await self._delete_info_for_user(ctx, uid)
+
+        # wait_time = 5*60
+        # timelimit = time.time() + wait_time
+        # await ctx.send("Are you sure you want to delete your data? This action cannot be reversed!")
+        # while time.time() < timelimit:
+        #     msg = await self.bot.wait_for("message", check=MessagePredicate.same_context(ctx))
+        #     msg_content = msg.content.strip().lower()
+        #     if msg_content.strip().lower()[0] == 'y':
+        #         uid = str(ctx.author.id)
+        #         self._delete_info_for_user(ctx, uid)
+        #     else:
+        #         return
 
 
     @sprint.command()
@@ -557,6 +554,10 @@ class Sprint(commands.Cog):
         await self._setup_default_guild(ctx.guild)
         await ctx.send("All data for all users of this server has been deleted.")
 
+
+
+    ###### DEBUGGING PURPOSES ######
+
     @sprint.command()
     @checks.admin_or_permissions(ban_members=True)
     async def get_sprint_id(self, ctx):
@@ -569,3 +570,27 @@ class Sprint(commands.Cog):
     @checks.admin_or_permissions(ban_members=True)
     async def get_sprint_dict(self, ctx):
         await ctx.send(str(self.sprint_dict))
+
+    @sprint.command()
+    @checks.admin_or_permissions(ban_members=True)
+    async def resetSettings(self, ctx):
+        async with self.config.guild(ctx.guild).guilds() as guilds:
+            guilds[str(ctx.guild.id)][SETTINGS_VARS] = default_settings.copy()
+            await ctx.send("Settings reset for guild")
+
+    @sprint.command()
+    @checks.admin_or_permissions(ban_members=True)
+    async def get_guild_dict(self, ctx):
+        async with self.config.guild(ctx.guild).guilds() as guilds:
+            try:
+                guild = guilds[str(ctx.guild.id)]
+                await ctx.send(str(guild))
+            except KeyError:
+                await ctx.send("No guild data")
+    
+
+    @sprint.command()
+    @checks.admin_or_permissions(ban_members=True)
+    async def resetGuild(self, ctx):
+        await self._setup_default_guild(ctx.guild)
+        await ctx.send("Everything reset for guild")

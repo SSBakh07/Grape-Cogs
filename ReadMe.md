@@ -12,9 +12,7 @@ Install a specific cog using the following command:
 
 ```[p]cog install grape-cogs <cog_name>```
 
-[TBA: List of cogs]
-
 Currently existing cogs:
 - sprint: a sprinting cog
 - Readycheck cog
-- twt fixer: replace twitter links with fx/vxtwitter links
+- sm fixer: replace twitter and instagram links with more embed-friendly links
