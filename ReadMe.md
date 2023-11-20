@@ -16,3 +16,4 @@ Currently existing cogs:
 - sprint: a sprinting cog
 - Readycheck cog
 - sm fixer: replace twitter and instagram links with more embed-friendly links
+- twt filter: Filter out tweets from unwanted users

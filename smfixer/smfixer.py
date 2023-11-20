@@ -21,7 +21,7 @@ defaults = {
 
 class SMFixer(commands.Cog):
     """
-    Ready Check
+    Social Media Discord Embed Fixer
     """
 
     def __init__(self, bot: Red) -> None:
@@ -44,7 +44,7 @@ class SMFixer(commands.Cog):
         return re.findall(reg_str, msg)
     
     def find_occurrence_ig(self, msg):
-        reg_str = "(https:\/\/)(instagram)(\.com\/)([a-zA-Z0-9_\/\?\=\&]+)"
+        reg_str = "(https:\/\/)(www.)?(instagram)(\.com\/)(reel\/|p\/)([a-zA-Z0-9_\/\?\=\&-]+)\/?"
         return re.findall(reg_str, msg)
 
     ##############################################
@@ -93,7 +93,7 @@ class SMFixer(commands.Cog):
         
         await self.config.guild(ctx.guild).toggle.set(toggle)
 
-        await ctx.send("Twitter fixer set to: " + inline(str(val)))
+        await ctx.send("Twitter fixer set to: " + inline(str(toggle[TWT])))
     
 
     @smfixer.command()
@@ -106,19 +106,19 @@ class SMFixer(commands.Cog):
         
         await self.config.guild(ctx.guild).toggle.set(toggle)
 
-        await ctx.send("Instagram fixer set to: " + inline(str(val)))
+        await ctx.send("Instagram fixer set to: " + inline(str(toggle[IG])))
     
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        async with self.config.guild(ctx.guild).toggle() as toggle:
-            if not toggle or message.author == self.bot.user.id:
+        async with self.config.guild(message.guild).toggle() as toggle:
+            if message.author == self.bot.user.id:
                 return
             
             msg_content = message.content
 
             twt_matches = self.find_occurrence_twt(msg_content)
-            if len(twt_matches) > 0:
+            if len(twt_matches) > 0 and toggle[TWT]:
                 for match in twt_matches:
                     _match = list(match)
                     _match[1] = "vxtwitter"
@@ -126,9 +126,9 @@ class SMFixer(commands.Cog):
                 return
             
             ig_matches = self.find_occurrence_ig(msg_content)
-            if len(ig_matches) > 0:
+            if len(ig_matches) > 0 and toggle[IG]:
                 for match in ig_matches:
                     _match = list(match)
-                    _match[1] = "instagramez"
+                    _match[2] = "instagramez"
                     await message.channel.send(''.join(_match))
                 return
