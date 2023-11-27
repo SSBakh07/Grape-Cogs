@@ -65,7 +65,7 @@ class SMFixer(commands.Cog):
         msg += "- Toggle Twitter fixing: " + inline("{}smfixer toggleTwt".format(prefix)) + "\n"
         msg += "- Toggle Instagram fixing: " + inline("{}smfixer toggleIg".format(prefix)) + "\n"
         msg_embed = randomize_colour(discord.Embed(title="smfixer Guide", description=msg))
-        await ctx.send("To be implemented")
+        await ctx.send(msg)
 
     @smfixer.command()
     async def toggle(self, ctx):
