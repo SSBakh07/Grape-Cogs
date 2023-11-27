@@ -1,20 +1,3 @@
-# Send alert *
-# Send dm *
-# restrict command to modmins * 
-# Command for adding people to block *
-# List blocked people *
-# delete block on user
-# setActionLevel: 0 -> log only, 1 -> warn user, 2 -> delete, 3 -> timeout user, 4 -> kick
-
-
-# setlogchannel
-# toggle
-# setactionlevel
-# createFilter
-# listFilter
-# deleteFilter
-# the actual filter itself
-
 from typing import Literal
 
 # TODO: clean up imports
