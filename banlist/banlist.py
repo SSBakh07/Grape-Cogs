@@ -25,7 +25,9 @@ class BanList(commands.Cog):
             identifier=1039588003770798192,
             force_registration=True,
         )
-        self.config.register_guild(**defaults)
+
+    def construct_ban_embed(self, user, reason):
+        embed = discord.Embed(title="User Banned")
 
 
     ##############################################
@@ -46,26 +48,51 @@ class BanList(commands.Cog):
         await ctx.send("Not implemented yet!")
 
     @banlist.command()
-    async def show(self, ctx):
+    async def show(self, ctx, n_users=250):
         """
-            List users banned by the server
+            List users banned by the server. Defaults to 250 users.
         """
+        try:
+            n_users = int(n_users)
+        except:
+            await ctx.send("Invalid value for `n_users`. Please enter a number")
+            return
+
         # bans = await ctx.guild.bans()
         waiting_msg = await ctx.send("Please wait...")
-        bans = [entry async for entry in ctx.guild.bans(limit=None)]
+        bans = [entry async for entry in ctx.guild.bans(limit=n_users)]
 
         ban_str = ""
         for ban in bans:
-            ban_str += "- " + bold(ban.user.name) + "(" + str(ban.user.id) + "): " + italics(ban.reason) + "\n"
+            ban_str += "- " + bold(ban.user.name) + f" (<@{ban.user.id}>)"
+            if ban.reason:
+                ban_str += ": " + italics(ban.reason)
+            ban_str += "\n"
         
-
-        pages = pagify(ban_str)
-        await menu(ctx, pages, DEFAULT_CONTROLS)
+        embed_title = f"Users Banned from {ctx.guild.name}"
+        
+        raw_pages = [pg for pg in pagify(ban_str, page_length=1000)]
+        pages = [italics(f"Page {i+1}/{len(raw_pages)}") + "\n\n" + pg for i, pg in enumerate(raw_pages)]
+        embeds = [randomize_colour(discord.Embed(description=pg, title=embed_title)) for pg in pages]
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
         await waiting_msg.delete()
 
+
     @banlist.command()
-    async def searchByUID(self, ctx):
+    async def searchByUID(self, ctx, uid, n_users=250):
+        """
+            Find banned user by uid
+        """
+        if not uid:
+            await ctx.send("User ID cannot be empty")
+            return
+        
+        bans = [entry async for entry in ctx.guild.bans(limit=n_users)]
         await ctx.send("Has not been implemented yet!")
+
+
+
+
 
     @banlist.command()
     async def searchByUser(self, ctx):
