@@ -64,7 +64,7 @@ class TwtFilter(commands.Cog):
         msg += f"**__Tweet__:** {url} \n"
         if action_level < 2:
             msg += "**__Message__**: " + message_url + "\n"
-        msg += f"**__Reason__:** " + inline("{}".format(reason)) + "\m"
+        msg += f"**__Reason__:** " + inline("{}".format(reason)) + "\n"
         msg += f"\n*If you think this has been a mistake, feel free to reach out!*"
 
         return discord.Embed(description=msg, color=discord.Colour.orange())
