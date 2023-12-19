@@ -234,7 +234,7 @@ class Sprint(commands.Cog):
         msg_content = ""
         for i, result in enumerate(final_wc):
             user, wc_diff, wpm = result
-            msg_content = "{}. <@{}> — {} words ({} wpm) \n".format(i+1, user, wc_diff, round(wpm))
+            msg_content += "{}. <@{}> — {} words ({} wpm) \n".format(i+1, user, wc_diff, round(wpm))
             
         msg_content += "\n\n" + italics("(Note that wpms under {} aren't counted towards average WPM)".format(guild[SETTINGS_VARS][CUTOFF_WPM_KEY]))
         msg_embed = randomize_colour(discord.Embed(title="🌟🌟🌟 LEADERBOARD 🌟🌟🌟", description=msg_content))
